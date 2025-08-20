@@ -1,239 +1,131 @@
-from utils.config import config
-import re
 import os
+import re
 
+config_dir = "config"
 
-def get_resolution_value(resolution_str):
-    """
-    Get resolution value from string
-    """
-    pattern = r"(\d+)[xX*](\d+)"
-    match = re.search(pattern, resolution_str)
-    if match:
-        width, height = map(int, match.groups())
-        return width * height
-    else:
-        return 0
+output_dir = "output"
 
+live_path = os.path.join(config_dir, "live")
 
-open_update = config.getboolean("Settings", "open_update", fallback=True)
+hls_path = os.path.join(config_dir, "hls")
 
-open_filter_resolution = config.getboolean(
-    "Settings", "open_filter_resolution", fallback=True
-)
+alias_path = os.path.join(config_dir, "alias.txt")
 
-ipv_type = config.get("Settings", "ipv_type", fallback="全部").lower()
+epg_path = os.path.join(config_dir, "epg.txt")
 
-ipv_type_prefer = [
-    type.strip().lower()
-    for type in config.get("Settings", "ipv_type_prefer", fallback="ipv4").split(",")
-]
+whitelist_path = os.path.join(config_dir, "whitelist.txt")
 
-ipv4_num = config.getint("Settings", "ipv4_num", fallback=15)
+blacklist_path = os.path.join(config_dir, "blacklist.txt")
 
-ipv6_num = config.getint("Settings", "ipv6_num", fallback=15)
+subscribe_path = os.path.join(config_dir, "subscribe.txt")
 
-ipv_limit = {
-    "ipv4": ipv4_num,
-    "ipv6": ipv6_num,
-}
+epg_result_path = os.path.join(output_dir, "epg/epg.xml")
 
-origin_type_prefer = [
-    origin.strip().lower()
-    for origin in config.get(
-        "Settings",
-        "origin_type_prefer",
-        fallback="subscribe,hotel,multicast,online_search",
-    ).split(",")
-    if origin.strip().lower()
-]
+epg_gz_result_path = os.path.join(output_dir, "epg/epg.gz")
 
-hotel_num = config.getint("Settings", "hotel_num", fallback=10)
+ipv4_result_path = os.path.join(output_dir, "ipv4/result.txt")
 
-multicast_num = config.getint("Settings", "multicast_num", fallback=10)
+ipv6_result_path = os.path.join(output_dir, "ipv6/result.txt")
 
-subscribe_num = config.getint("Settings", "subscribe_num", fallback=10)
+live_result_path = os.path.join(output_dir, "live.txt")
 
-online_search_num = config.getint("Settings", "online_search_num", fallback=10)
+live_ipv4_result_path = os.path.join(output_dir, "ipv4/live.txt")
 
-source_limits = {
-    "hotel": hotel_num,
-    "multicast": multicast_num,
-    "subscribe": subscribe_num,
-    "online_search": online_search_num,
-}
+live_ipv6_result_path = os.path.join(output_dir, "ipv6/live.txt")
 
-min_resolution = config.get("Settings", "min_resolution", fallback="1920x1080")
+rtmp_data_path = os.path.join(output_dir, "data/rtmp.db")
 
-min_resolution_value = get_resolution_value(
-    config.get("Settings", "min_resolution", fallback="1920x1080")
-)
+hls_result_path = os.path.join(output_dir, "hls.txt")
 
-urls_limit = config.getint("Settings", "urls_limit", fallback=30)
+hls_ipv4_result_path = os.path.join(output_dir, "ipv4/hls.txt")
 
-open_url_info = config.getboolean("Settings", "open_url_info", fallback=True)
+hls_ipv6_result_path = os.path.join(output_dir, "ipv6/hls.txt")
 
-recent_days = config.getint("Settings", "recent_days", fallback=30)
+cache_path = os.path.join(output_dir, "data/cache.pkl.gz")
 
-domain_blacklist = [
-    domain.strip()
-    for domain in config.get("Settings", "domain_blacklist", fallback="").split(",")
-    if domain.strip()
-]
+speed_test_log_path = os.path.join(output_dir, "log/speed_test.log")
 
-url_keywords_blacklist = [
-    keyword.strip()
-    for keyword in config.get("Settings", "url_keywords_blacklist", fallback="").split(
-        ","
-    )
-    if keyword.strip()
-]
+result_log_path = os.path.join(output_dir, "log/result.log")
 
-source_file = config.get("Settings", "source_file", fallback="config/demo.txt")
+log_path = os.path.join(output_dir, "log/log.log")
 
-final_file = config.get("Settings", "final_file", fallback="output/result.txt")
+url_host_pattern = re.compile(r"((https?|rtmp|rtsp)://)?([^:@/]+(:[^:@/]*)?@)?(\[[0-9a-fA-F:]+]|([\w-]+\.)+[\w-]+)")
 
-open_m3u_result = config.getboolean("Settings", "open_m3u_result", fallback=True)
+url_pattern = re.compile(
+    r"(?P<url>" + url_host_pattern.pattern + r"(?:\S*?(?=\?$|\?\$|$)|[^\s?]*))")
 
-open_keep_all = config.getboolean("Settings", "open_keep_all", fallback=False)
+rt_url_pattern = re.compile(r"^(rtmp|rtsp)://.*$")
 
-open_subscribe = config.getboolean("Settings", f"open_subscribe", fallback=True)
+rtp_pattern = re.compile(r"^(?P<name>[^,，]+)[,，]?(?P<url>rtp://.*)$")
 
-open_hotel = config.getboolean("Settings", f"open_hotel", fallback=True)
+demo_txt_pattern = re.compile(r"^(?P<name>[^,，]+)[,，]?(?!#genre#)" + r"(" + url_pattern.pattern + r")?")
 
-open_hotel_fofa = config.getboolean("Settings", f"open_hotel_fofa", fallback=True)
+txt_pattern = re.compile(r"^(?P<name>[^,，]+)[,，](?!#genre#)" + r"(" + url_pattern.pattern + r")")
 
-open_hotel_tonkiang = config.getboolean(
-    "Settings", f"open_hotel_tonkiang", fallback=True
-)
+multiline_txt_pattern = re.compile(r"^(?P<name>[^,，]+)[,，](?!#genre#)" + r"(" + url_pattern.pattern + r")",
+                                   re.MULTILINE)
 
-open_multicast = config.getboolean("Settings", f"open_multicast", fallback=True)
+m3u_pattern = re.compile(
+    r"^#EXTINF:-1[\s+,，](?P<attributes>[^,，]+)[，,](?P<name>.*?)\n" + r"(" + url_pattern.pattern + r")")
 
-open_multicast_tonkiang = config.getboolean(
-    "Settings", "open_multicast_tonkiang", fallback=True
-)
+multiline_m3u_pattern = re.compile(
+    r"^#EXTINF:-1[\s+,，](?P<attributes>[^,，]+)[，,](?P<name>.*?)\n(?P<options>(#EXTVLCOPT:.*\n)*?)" + r"(" + url_pattern.pattern + r")",
+    re.MULTILINE)
 
-open_multicast_fofa = config.getboolean(
-    "Settings", "open_multicast_fofa", fallback=True
-)
+key_value_pattern = re.compile(r'(?P<key>\w+)=(?P<value>\S+)')
 
-open_online_search = config.getboolean("Settings", f"open_online_search", fallback=True)
-
-open_method = {
-    "subscribe": open_subscribe,
-    "hotel": open_hotel,
-    "multicast": open_multicast,
-    "online_search": open_online_search,
-    "hotel_fofa": open_hotel_fofa,
-    "hotel_tonkiang": open_hotel_tonkiang,
-    "multicast_fofa": open_multicast_fofa,
-    "multicast_tonkiang": open_multicast_tonkiang,
-}
-
-open_use_old_result = config.getboolean(
-    "Settings", "open_use_old_result", fallback=True
-)
-
-open_sort = config.getboolean("Settings", "open_sort", fallback=True)
-
-open_ffmpeg = config.getboolean("Settings", "open_ffmpeg", fallback=True)
-
-ipv_type = config.get("Settings", "ipv_type", fallback="全部").lower()
-
-open_update_time = config.getboolean("Settings", "open_update_time", fallback=True)
-
-multicast_region_list = [
-    region.strip()
-    for region in config.get(
-        "Settings", "multicast_region_list", fallback="全部"
-    ).split(",")
-    if region.strip()
-]
-
-hotel_region_list = [
-    region.strip()
-    for region in config.get("Settings", "hotel_region_list", fallback="全部").split(
-        ","
-    )
-    if region.strip()
-]
-
-request_timeout = config.getint("Settings", "request_timeout", fallback=10)
-
-sort_timeout = config.getint("Settings", "sort_timeout", fallback=10)
-
-open_proxy = config.getboolean("Settings", "open_proxy", fallback=False)
-
-open_driver = config.getboolean("Settings", "open_driver", fallback=True)
-
-hotel_page_num = config.getint("Settings", "hotel_page_num", fallback=1)
-
-multicast_page_num = config.getint("Settings", "multicast_page_num", fallback=1)
-
-online_search_page_num = config.getint("Settings", "online_search_page_num", fallback=1)
-
-subscribe_urls = [
-    url.strip()
-    for url in config.get("Settings", "subscribe_urls", fallback="").split(",")
-    if url.strip()
-]
-
-response_time_weight = config.getfloat("Settings", "response_time_weight", fallback=0.5)
-
-resolution_weight = config.getfloat("Settings", "resolution_weight", fallback=0.5)
-
-open_update_time = config.getboolean("Settings", "open_update_time", fallback=True)
-
-open_url_info = config.getboolean("Settings", "open_url_info", fallback=True)
-
-log_dir = "output"
-
-log_file = "result_new.log"
-
-log_path = os.path.join(log_dir, log_file)
-
-url_pattern = r"\b((https?):\/\/)?(\[[0-9a-fA-F:]+\]|([\w-]+\.)+[\w-]+)(:[0-9]{1,5})?(\/[^\s]*)?\b"
-
-rtp_pattern = r"^([^,，]+)(?:[,，])?(rtp://.*)$"
-
-demo_txt_pattern = r"^([^,，]+)(?:[,，])?(?!#genre#)" + r"(" + url_pattern + r")?"
-
-txt_pattern = r"^([^,，]+)(?:[,，])(?!#genre#)" + r"(" + url_pattern + r")"
-
-m3u_pattern = r"^#EXTINF:-1.*?(?:，|,)(.*?)\n" + r"(" + url_pattern + r")"
-
-sub_pattern = r"-|_|\((.*?)\)|\（(.*?)\）|\[(.*?)\]|\「(.*?)\」| |｜|频道|普清|标清|高清|HD|hd|超清|超高|超高清|中央|央视|台|电信|联通|移动"
+sub_pattern = re.compile(
+    r"-|_|\((.*?)\)|（(.*?)）|\[(.*?)]|「(.*?)」| |｜|频道|普清|标清|高清|HD|hd|超清|超高|超高清|中央|央视|电视台|台|电信|联通|移动")
 
 replace_dict = {
     "plus": "+",
     "PLUS": "+",
     "＋": "+",
-    "CCTV1综合": "CCTV1",
-    "CCTV2财经": "CCTV2",
-    "CCTV3综艺": "CCTV3",
-    "CCTV4国际": "CCTV4",
-    "CCTV4中文国际": "CCTV4",
-    "CCTV4欧洲": "CCTV4",
-    "CCTV5体育": "CCTV5",
-    "CCTV5+体育赛视": "CCTV5+",
-    "CCTV5+体育赛事": "CCTV5+",
-    "CCTV5+体育": "CCTV5+",
-    "CCTV6电影": "CCTV6",
-    "CCTV7军事": "CCTV7",
-    "CCTV7军农": "CCTV7",
-    "CCTV7农业": "CCTV7",
-    "CCTV7国防军事": "CCTV7",
-    "CCTV8电视剧": "CCTV8",
-    "CCTV9记录": "CCTV9",
-    "CCTV9纪录": "CCTV9",
-    "CCTV10科教": "CCTV10",
-    "CCTV11戏曲": "CCTV11",
-    "CCTV12社会与法": "CCTV12",
-    "CCTV13新闻": "CCTV13",
-    "CCTV新闻": "CCTV13",
-    "CCTV14少儿": "CCTV14",
-    "CCTV15音乐": "CCTV15",
-    "CCTV16奥林匹克": "CCTV16",
-    "CCTV17农业农村": "CCTV17",
-    "CCTV17农业": "CCTV17",
 }
+
+region_list = [
+    "广东",
+    "北京",
+    "湖南",
+    "湖北",
+    "浙江",
+    "上海",
+    "天津",
+    "江苏",
+    "山东",
+    "河南",
+    "河北",
+    "山西",
+    "陕西",
+    "安徽",
+    "重庆",
+    "福建",
+    "江西",
+    "辽宁",
+    "黑龙江",
+    "吉林",
+    "四川",
+    "云南",
+    "香港",
+    "内蒙古",
+    "甘肃",
+    "海南",
+    "云南",
+]
+
+origin_map = {
+    "hotel": "酒店源",
+    "multicast": "组播源",
+    "subscribe": "订阅源",
+    "online_search": "关键字源",
+    "whitelist": "白名单",
+    "local": "本地源",
+}
+
+ipv6_proxy = "http://www.ipv6proxy.net/go.php?u="
+
+foodie_url = "http://www.foodieguide.com/iptvsearch/"
+
+foodie_hotel_url = "http://www.foodieguide.com/iptvsearch/hoteliptv.php"
+
+waiting_tip = "🔍️未找到结果文件，若已启动更新，请耐心等待更新完成..."
